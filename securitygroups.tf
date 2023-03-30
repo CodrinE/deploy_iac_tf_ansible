@@ -34,12 +34,12 @@ resource "aws_security_group" "jenkins_sg" {
   dynamic "ingress" {
     for_each = var.ingress_rules_jenkins
     content {
-      description = ingress.value["description"]
-      from_port   = ingress.value["from_port"]
-      to_port     = ingress.value["to_port"]
-      security_groups = ingress.value["to_port"] == 8080 ? [aws_security_group.lb_sg.id]: null
-      cidr_blocks = ingress.value["cidr_blocks"]
-      protocol    = ingress.value["protocol"]
+      description     = ingress.value["description"]
+      from_port       = ingress.value["from_port"]
+      to_port         = ingress.value["to_port"]
+      security_groups = ingress.value["to_port"] == 8080 ? [aws_security_group.lb_sg.id] : null
+      cidr_blocks     = ingress.value["cidr_blocks"]
+      protocol        = ingress.value["protocol"]
     }
   }
   egress {
