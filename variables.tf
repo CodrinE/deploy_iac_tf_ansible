@@ -97,3 +97,13 @@ variable "key_name" {
   type    = string
   default = "aws_key_jenkins"
 }
+
+variable "instance_type" {
+  type    = string
+  default = "te.micro"
+}
+
+variable "workers_count" {
+  type    = number
+  default = 1
+}
