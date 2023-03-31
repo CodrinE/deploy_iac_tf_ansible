@@ -92,3 +92,8 @@ variable "ingress_rules_worker" {
     cidr_blocks = ["10.0.1.0/24"]
   }]
 }
+
+variable "key_name" {
+  type    = string
+  default = "aws_key_jenkins"
+}
