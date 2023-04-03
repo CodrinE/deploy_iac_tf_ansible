@@ -11,7 +11,7 @@ data "aws_ssm_parameter" "linuxAmiLondon" {
 }
 #Save pem key locally
 resource "local_file" "devkey" {
-  filename = "${path.module}/${var.key_name}.pem"
+  filename = "${var.key_name}.pem"
   content  = tls_private_key.dev_priv_key.private_key_pem
 }
 #Create a PEM private key
@@ -41,11 +41,21 @@ resource "aws_instance" "jenkins-master" {
   associate_public_ip_address = true
   vpc_security_group_ids      = [aws_security_group.jenkins_sg.id]
   subnet_id                   = aws_subnet.subnet_1.id
+  iam_instance_profile        = aws_iam_instance_profile.test_profile.name
 
   tags = {
-    Name = "jenkins-master_tf"
+    Name = "jenkins_master_tf"
   }
-  depends_on = [aws_main_route_table_association.set_master_default_rt_association]
+  depends_on = [aws_iam_role_policy.test_policy, aws_main_route_table_association.set_master_default_rt_association]
+
+  provisioner "local-exec" {
+    interpreter = ["/usr/bin/bash", "-c"]
+    command = <<EOF
+ls -al  ./ansible_templates > test.txt
+aws ec2 wait instance-status-ok --region ${var.master-region} --instance-ids ${self.id};
+ansible-playbook --extra-vars 'passed_in_hosts=tag_Name_${self.tags.Name}' ${path.module}/ansible_templates/jenkins-master-sample.yml
+EOF
+  }
 }
 
 #Create EC2 instance in eu-west-2
@@ -58,9 +68,18 @@ resource "aws_instance" "jenkins-worker" {
   associate_public_ip_address = true
   vpc_security_group_ids      = [aws_security_group.jenkins_sg_london.id]
   subnet_id                   = aws_subnet.subnet_1_london.id
+  iam_instance_profile        = aws_iam_instance_profile.test_profile.name
 
   tags = {
-    Name = join("_", ["jenkins-worker_tf", count.index + 1])
+    Name = join("_", ["jenkins_worker_tf", count.index + 1])
   }
-  depends_on = [aws_main_route_table_association.set_master_default_rt_association, aws_instance.jenkins-master]
+  depends_on = [aws_main_route_table_association.set_worker_default_rt_association, aws_instance.jenkins-master]
+
+  provisioner "local-exec" {
+    interpreter = ["/usr/bin/bash", "-c"]
+    command = <<EOF
+aws ec2 wait instance-status-ok --region ${var.worker-region} --instance-ids ${self.id};
+ansible-playbook --extra-vars 'passed_in_hosts=tag_Name_${self.tags.Name}' ${path.module}/ansible_templates/jenkins-worker-sample.yml
+EOF
+  }
 }

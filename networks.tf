@@ -75,7 +75,7 @@ resource "aws_vpc_peering_connection_accepter" "accept_peering" {
   auto_accept               = true
 }
 
-#Creatr route table in eu-cental-1
+#Creatr route table in eu-central-1
 resource "aws_route_table" "internet_route" {
   vpc_id   = aws_vpc.vpc_master.id
   provider = aws.master-region

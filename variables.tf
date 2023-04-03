@@ -56,9 +56,9 @@ variable "ingress_rules_jenkins" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
     }, {
-    description = "Allow anyone on port 8080"
-    from_port   = 8080
-    to_port     = 8080
+    description = "Allow anyone on port 80"
+    from_port   = 80
+    to_port     = 80
     protocol    = "tcp"
     cidr_blocks = null
     }, {
@@ -100,10 +100,15 @@ variable "key_name" {
 
 variable "instance_type" {
   type    = string
-  default = "te.micro"
+  default = "t2.micro"
 }
 
 variable "workers_count" {
   type    = number
   default = 1
+}
+
+variable "webserver_port" {
+  type = number
+  default = 80
 }

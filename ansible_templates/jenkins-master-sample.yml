@@ -1,0 +1,12 @@
+---
+- hosts: "{{ passed_in_hosts }}"
+  become: yes
+  remote_user: ec2-user
+  become_user: root
+  tasks:
+    - name: install git client
+      yum:
+        name: git
+        state: present
+        with_items: "{{ ec2_result.tagged_instances }}"
+
