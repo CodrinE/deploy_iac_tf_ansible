@@ -4,9 +4,12 @@
   remote_user: ec2-user
   become_user: root
   tasks:
-    - name: install git client
+    - name: install httpd
       yum:
-        name: git
+        name: httpd
         state: present
-        with_items: "{{ ec2_result.tagged_instances }}"
+    - name: Enable and start httpd
+      service: httpd
+      state: started
+      enabled: yes
 

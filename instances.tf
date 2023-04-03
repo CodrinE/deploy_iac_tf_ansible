@@ -50,7 +50,7 @@ resource "aws_instance" "jenkins-master" {
 
   provisioner "local-exec" {
     interpreter = ["/usr/bin/bash", "-c"]
-    command = <<EOF
+    command     = <<EOF
 ls -al  ./ansible_templates > test.txt
 aws ec2 wait instance-status-ok --region ${var.master-region} --instance-ids ${self.id};
 ansible-playbook --extra-vars 'passed_in_hosts=tag_Name_${self.tags.Name}' ${path.module}/ansible_templates/jenkins-master-sample.yml
@@ -77,7 +77,7 @@ resource "aws_instance" "jenkins-worker" {
 
   provisioner "local-exec" {
     interpreter = ["/usr/bin/bash", "-c"]
-    command = <<EOF
+    command     = <<EOF
 aws ec2 wait instance-status-ok --region ${var.worker-region} --instance-ids ${self.id};
 ansible-playbook --extra-vars 'passed_in_hosts=tag_Name_${self.tags.Name}' ${path.module}/ansible_templates/jenkins-worker-sample.yml
 EOF

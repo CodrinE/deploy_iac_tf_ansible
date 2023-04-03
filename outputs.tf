@@ -20,3 +20,6 @@ output "jenkins-worker-public-ip" {
     worker.id => worker.public_ip
   }
 }
+output "LB-DNS-NAME" {
+  value = aws_lb.application_lb.dns_name
+}
