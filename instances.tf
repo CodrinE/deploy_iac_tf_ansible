@@ -52,9 +52,30 @@ resource "aws_instance" "jenkins-master" {
     interpreter = ["/usr/bin/bash", "-c"]
     command     = <<EOF
 ls -al  ./ansible_templates > test.txt
-aws ec2 wait instance-status-ok --region ${var.master-region} --instance-ids ${self.id};
-ansible-playbook --extra-vars 'passed_in_hosts=tag_Name_${self.tags.Name}' ${path.module}/ansible_templates/jenkins-master-sample.yml
+aws ec2 wait instance-status-ok --region ${var.master-region} --instance-ids ${self.id} \
+&& ansible-playbook --extra-vars 'passed_in_hosts=tag_Name_${self.tags.Name}' ${path.module}/ansible_templates/install_jenkins.yaml
 EOF
+  }
+}
+
+resource "null_resource" "jenkins-worker" {
+  count = var.workers_count
+  triggers = {
+    master_private_ip = aws_instance.jenkins-master.private_ip
+    private_key = local_file.devkey.filename
+    worker_public_ip = aws_instance.jenkins-worker[count.index].public_ip
+    worker_private_ip = aws_instance.jenkins-worker[count.index].private_ip
+    current_ec2_instance_id = element(aws_instance.jenkins-worker.*.id, count.index)
+  }
+  connection {
+    private_key = file(self.triggers.private_key)
+    type        = "ssh"
+    user        = "ec2-user"
+    host        = self.triggers.worker_public_ip
+  }
+  provisioner "local-exec" {
+    when = destroy
+    command = "java -jar /home/ec2-user/jenkins-cli.jar -auth @/home/ec2-user/jenkins_auth -s http://${self.triggers.master_private_ip}:8080 -auth @/home/ec2-user/jenkins_auth delete-node ${self.triggers.worker_private_ip}"
   }
 }
 
@@ -70,16 +91,24 @@ resource "aws_instance" "jenkins-worker" {
   subnet_id                   = aws_subnet.subnet_1_london.id
   iam_instance_profile        = aws_iam_instance_profile.test_profile.name
 
+  connection {
+    private_key = file(local_file.devkey.filename)
+    type        = "ssh"
+    user        = "ec2-user"
+    host        = self.private_ip
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["/usr/bin/bash", "-c"]
+    command     = <<EOF
+aws ec2 wait instance-status-ok --region ${var.worker-region} --instance-ids ${self.id} \
+&& ansible-playbook --extra-vars 'passed_in_hosts=tag_Name_${self.tags.Name} master_ip=${aws_instance.jenkins-master.private_ip}' ${path.module}/ansible_templates/install_worker.yaml
+EOF
+  }
+
   tags = {
     Name = join("_", ["jenkins_worker_tf", count.index + 1])
   }
   depends_on = [aws_main_route_table_association.set_worker_default_rt_association, aws_instance.jenkins-master]
 
-  provisioner "local-exec" {
-    interpreter = ["/usr/bin/bash", "-c"]
-    command     = <<EOF
-aws ec2 wait instance-status-ok --region ${var.worker-region} --instance-ids ${self.id};
-ansible-playbook --extra-vars 'passed_in_hosts=tag_Name_${self.tags.Name}' ${path.module}/ansible_templates/jenkins-worker-sample.yml
-EOF
-  }
 }

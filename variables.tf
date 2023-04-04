@@ -110,5 +110,5 @@ variable "workers_count" {
 
 variable "webserver_port" {
   type    = number
-  default = 80
+  default = 8080
 }
