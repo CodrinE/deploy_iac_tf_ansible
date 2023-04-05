@@ -36,8 +36,25 @@ resource "aws_lb_listener" "jenkins_listener_http" {
   port              = 80
   protocol          = "HTTP"
   default_action {
+    type = "redirect"
+    redirect {
+      status_code = "HTTP_301"
+      port        = 443
+      protocol    = "HTTPS"
+    }
+  }
+}
+
+resource "aws_lb_listener" "jenkins_listener_https" {
+  load_balancer_arn = aws_lb.application_lb.arn
+  provider          = aws.master-region
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  port              = 443
+  protocol          = "HTTPS"
+  certificate_arn   = aws_acm_certificate.jenkins_lb_https.arn
+  default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.app_lb_tg.id
+    target_group_arn = aws_lb_target_group.app_lb_tg.arn
   }
 }
 resource "aws_lb_target_group_attachment" "jenkins_master_attach" {
@@ -46,3 +63,4 @@ resource "aws_lb_target_group_attachment" "jenkins_master_attach" {
   provider         = aws.master-region
   port             = var.webserver_port
 }
+

@@ -61,10 +61,10 @@ EOF
 resource "null_resource" "jenkins-worker" {
   count = var.workers_count
   triggers = {
-    master_private_ip = aws_instance.jenkins-master.private_ip
-    private_key = local_file.devkey.filename
-    worker_public_ip = aws_instance.jenkins-worker[count.index].public_ip
-    worker_private_ip = aws_instance.jenkins-worker[count.index].private_ip
+    master_private_ip       = aws_instance.jenkins-master.private_ip
+    private_key             = local_file.devkey.filename
+    worker_public_ip        = aws_instance.jenkins-worker[count.index].public_ip
+    worker_private_ip       = aws_instance.jenkins-worker[count.index].private_ip
     current_ec2_instance_id = element(aws_instance.jenkins-worker.*.id, count.index)
   }
   connection {
@@ -74,7 +74,7 @@ resource "null_resource" "jenkins-worker" {
     host        = self.triggers.worker_public_ip
   }
   provisioner "local-exec" {
-    when = destroy
+    when    = destroy
     command = "java -jar /home/ec2-user/jenkins-cli.jar -auth @/home/ec2-user/jenkins_auth -s http://${self.triggers.master_private_ip}:8080 -auth @/home/ec2-user/jenkins_auth delete-node ${self.triggers.worker_private_ip}"
   }
 }
